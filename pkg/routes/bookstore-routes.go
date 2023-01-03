@@ -1,14 +1,14 @@
 package routes
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 	"github.com/tantm97/book-management-system-golang/pkg/controllers"
 )
 
-var RegisterBookStoreRoutes = func(router *mux.Router) {
-	router.HandleFunc("/book/", controllers.CreateBook).Methods("POST")
-	router.HandleFunc("/book/", controllers.GetBook).Methods("GET")
-	router.HandleFunc("/book/{bookId}", controllers.GetBookById).Methods("GET")
-	router.HandleFunc("/book/{bookId}", controllers.UpdateBook).Methods("PUT")
-	router.HandleFunc("/book/{bookId}", controllers.DeleteBook).Methods("DELETE")
+func RegisterBookStoreRoutes(incomingRoutes *gin.Engine) {
+	incomingRoutes.POST("/book/", controllers.CreateBook)
+	incomingRoutes.GET("/book/", controllers.GetBooks)
+	incomingRoutes.GET("/book/{bookId}", controllers.GetBookById)
+	incomingRoutes.PATCH("/book/{bookId}", controllers.UpdateBook)
+	incomingRoutes.DELETE("/book/{bookId}", controllers.DeleteBook)
 }

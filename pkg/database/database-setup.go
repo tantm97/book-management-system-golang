@@ -1,25 +1,21 @@
-package config
+package database
 
 import (
 	"fmt"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
+	"github.com/tantm97/book-management-system-golang/pkg/models"
 )
 
-var (
-	db *gorm.DB
-)
+var DB *gorm.DB
 
 func Connect() {
 	d, err := gorm.Open("mysql", "test:password@/test_golang?charset=utf8&parseTime=True&loc=Local")
 	if err != nil {
 		panic(err)
 	}
-	db = d
+	DB = d
 	fmt.Println("connected database!")
-}
-
-func GetDB() *gorm.DB {
-	return db
+	DB.AutoMigrate(&models.Book{}, &models.User{})
 }

@@ -1,84 +1,95 @@
 package controllers
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/tantm97/book-management-system-golang/pkg/database"
 	"github.com/tantm97/book-management-system-golang/pkg/models"
-	"github.com/tantm97/book-management-system-golang/pkg/utils"
 )
 
-func GetBook(w http.ResponseWriter, r *http.Request) {
-	books := models.GetAllBooks()
-	res, _ := json.Marshal(books)
-	w.Header().Set("content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+func GetBooks(c *gin.Context) {
+	var books []models.Book
+	result := database.DB.Find(&books)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	}
+	c.JSON(http.StatusOK, books)
 }
 
-func GetBookById(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	bookId := vars["bookId"]
-	Id, err := strconv.ParseInt(bookId, 0, 0)
-	if err != nil {
-		fmt.Println("error while parsing")
+func GetBookById(c *gin.Context) {
+	var book models.Book
+	bookId := c.Param("bookId")
+	if err := database.DB.Where("id=?", bookId).First(&book).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book not found."})
+		return
 	}
-	bookDetails, _ := models.GetBookById(Id)
-	res, _ := json.Marshal(bookDetails)
-	w.Header().Set("content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	c.JSON(http.StatusOK, book)
 }
 
-func CreateBook(w http.ResponseWriter, r *http.Request) {
-	book := &models.Book{}
-	utils.ParseBody(r, book)
-	b := book.CreateBook()
-	res, _ := json.Marshal(b)
-	w.Header().Set("content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+func CreateBook(c *gin.Context) {
+	var input models.CreateBook
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	book := models.Book{Title: input.Title,
+		Author:      input.Author,
+		Publication: input.Publication}
+	result := database.DB.Create(&book)
+	if result.Error != nil {
+		msg := fmt.Sprint("Book was not created")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		return
+	}
+	c.JSON(http.StatusCreated, book)
 }
 
-func DeleteBook(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	bookId := vars["bookId"]
-	Id, err := strconv.ParseInt(bookId, 0, 0)
-	if err != nil {
-		fmt.Println("error while parsing")
+func DeleteBook(c *gin.Context) {
+	var book models.Book
+	bookId := c.Param("bookId")
+	if err := database.DB.Where("id=?", bookId).First(&book).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book not found."})
+		return
 	}
-	bookDetails := models.DeleteBook(Id)
-	res, _ := json.Marshal(bookDetails)
-	w.Header().Set("content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	result := database.DB.Delete(&book)
+	if result.Error != nil {
+		msg := fmt.Sprint("Book was not deleted")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		return
+	}
+	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func UpdateBook(w http.ResponseWriter, r *http.Request) {
-	book := &models.Book{}
-	utils.ParseBody(r, book)
-	vars := mux.Vars(r)
-	bookId := vars["bookId"]
-	Id, err := strconv.ParseInt(bookId, 0, 0)
-	if err != nil {
-		fmt.Println("error while parsing")
+func UpdateBook(c *gin.Context) {
+	var input models.UpdateBook
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	bookDetails, db := models.GetBookById(Id)
-	if book.Name != "" {
-		bookDetails.Name = book.Name
+
+	var foundedBook models.Book
+	bookId := c.Param("bookId")
+	if err := database.DB.Where("id=?", bookId).First(&foundedBook).Error; err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Book not found."})
+		return
 	}
-	if book.Author != "" {
-		bookDetails.Author = book.Author
+
+	if input.Author != "" {
+		foundedBook.Author = input.Author
 	}
-	if book.Publication != "" {
-		bookDetails.Publication = book.Publication
+	if input.Publication != "" {
+		foundedBook.Publication = input.Publication
 	}
-	db.Save(&bookDetails)
-	res, _ := json.Marshal(bookDetails)
-	w.Header().Set("content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	if input.Title != "" {
+		foundedBook.Title = input.Title
+	}
+	result := database.DB.Save(&foundedBook)
+	if result.Error != nil {
+		msg := fmt.Sprint("Book was not updated")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": msg})
+		return
+	}
+	c.JSON(http.StatusOK, foundedBook)
 }

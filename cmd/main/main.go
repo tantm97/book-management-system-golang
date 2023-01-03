@@ -2,15 +2,32 @@ package main
 
 import (
 	"log"
-	"net/http"
+	"os"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"github.com/tantm97/book-management-system-golang/pkg/database"
 	"github.com/tantm97/book-management-system-golang/pkg/routes"
 )
 
 func main() {
-	r := mux.NewRouter()
-	routes.RegisterBookStoreRoutes(r)
-	http.Handle("/", r)
-	log.Fatal(http.ListenAndServe("localhost:8080", r))
+	err := godotenv.Load("../../.env")
+
+	if err != nil {
+		log.Fatal("Error loading .env file.")
+	}
+	port := os.Getenv("PORT")
+
+	if port == "" {
+		port = "8000"
+	}
+
+	database.Connect()
+
+	router := gin.New()
+	router.Use(gin.Logger())
+
+	routes.RegisterBookStoreRoutes(router)
+
+	router.Run(":" + port)
 }
