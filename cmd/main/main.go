@@ -27,7 +27,7 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 
-	routes.RegisterBookStoreRoutes(router)
+	routes.BookStoreRoutes(router)
 
 	router.Run(":" + port)
 }
