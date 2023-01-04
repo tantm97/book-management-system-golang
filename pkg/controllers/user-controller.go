@@ -66,6 +66,7 @@ func Signup(c *gin.Context) {
 		FirstName: &input.FirstName,
 		LastName:  &input.LastName,
 		Phone:     &input.Phone,
+		Email:     &input.Email,
 	}
 	password := HashPassword(input.Password)
 	newUser.Password = &password
@@ -120,6 +121,15 @@ func Login(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, foundedUser)
+}
+
+func GetUsers(c *gin.Context) {
+	var users []models.User
+	result := database.DB.Find(&users)
+	if result.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
+	}
+	c.JSON(http.StatusOK, users)
 }
 
 func UpdateUser(c *gin.Context) {
