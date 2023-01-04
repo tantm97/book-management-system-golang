@@ -21,8 +21,8 @@ func HashPassword(password string) string {
 	return string(bytes)
 }
 
-func VerifyPassword(providedPassword string, userPassword string) (bool, string) {
-	err := bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(providedPassword))
+func VerifyPassword(userPassword string, providedPassword string) (bool, string) {
+	err := bcrypt.CompareHashAndPassword([]byte(providedPassword), []byte(userPassword))
 	check := true
 	msg := ""
 	if err != nil {
@@ -105,7 +105,7 @@ func Login(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email not found."})
 		return
 	}
-	passwordIsValid, msg := VerifyPassword(*foundedUser.Password, input.Password)
+	passwordIsValid, msg := VerifyPassword(input.Password, *foundedUser.Password)
 	if passwordIsValid != true {
 		c.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
